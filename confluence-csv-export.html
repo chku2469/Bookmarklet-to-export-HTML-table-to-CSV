@@ -1,0 +1,48 @@
+<script type="text/javascript">
+// This is a modified version of the script Davin Studer from
+// http://iamdav.in/2014/10/24/bookmarklet-creating-csv-html-table/
+// I added in a BOM mark to allow for non-english table contents export as well as
+// wrapped it in a script snippet to be appended at them end of a confluence page in a html block
+function downloadCSVFile(filename, mime, text) {
+    if (window.navigator.msSaveOrOpenBlob){
+        // IE 10+
+        var blob = new Blob([decodeURIComponent(encodeURI(text))], {
+            type: 'text/csv;charset=utf-8'
+        });
+        window.navigator.msSaveBlob(blob, filename);
+    } else {
+        var pom = document.createElement('a');
+        pom.setAttribute('href', 'data:' + mime + ';charset=utf-8,%EF%BB%BF' + encodeURIComponent(text));
+        pom.setAttribute('download', filename);
+        document.body.appendChild(pom);
+        pom.click();
+        document.body.removeChild(pom);
+    }
+}
+
+function addCSVLinks() {
+    jQuery('.csvLink').remove();
+    
+    jQuery('table').each(function(index){
+        jQuery(this).attr('data-csvtable', index).before('<a href="#" class="csvLink" data-forcsvtable="' + index + '">Export to CSV</a>');
+    });
+    
+    jQuery('.csvLink').click(function(){
+        var text = '';
+        var csvTableIndex = jQuery(this).attr('data-forcsvtable');
+        jQuery('table[data-csvtable="' + csvTableIndex + '"] tr').each(function(){
+            jQuery('td, th', this).each(function(index){
+                if(index != 0) {
+                    text += ',';
+                }
+                text += '"' + jQuery(this).text().replace(/\xa0/g,' ').replace(/\r?\n|\r/g, '').replace(/"/g, '""') + '"';
+            });
+            text += '\r\n';
+        });
+        jQuery('.csvLink').remove();
+        downloadCSVFile('TableExport.csv', 'text/csv', text);
+    });
+}
+
+addCSVLinks();
+</script>
